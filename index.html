@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Diego Finance</title>
+     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <style>
+        :root { --bg: #f8fafc; --p: #1e293b; --acc: #f59e0b; --bank: #3b82f6; --save: #10b981; --exp: #ef4444; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--p); padding: 15px; margin: 0; }
+        .container { max-width: 600px; margin: auto; }
+        .card { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 15px; }
+        .stat-label { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        .stat-val { font-size: 1.4rem; font-weight: 800; display: block; margin-top: 4px; }
+        
+        /* Calendario a scorrimento */
+        .calendar-scroll { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 5px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+        .day { min-width: 90px; scroll-snap-align: start; background: white; border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; text-align: center; flex-shrink: 0; }
+        .day.today { border: 2px solid var(--acc); background: #fffbeb; }
+        .day.weekend { background: #fef3c7; }
+        .day-num { font-size: 0.8rem; font-weight: 700; color: #94a3b8; }
+        .day-amt { display: block; margin-top: 5px; font-size: 1.1rem; font-weight: 800; color: #b45309; }
+
+        /* Mobile Buttons */
+        input, button { width: 100%; height: 50px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 1rem; box-sizing: border-box; margin-top: 5px; }
+        button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-salary { background: var(--save); }
+        .btn-transfer { background: var(--acc); color: #000; }
+        .btn-bank-exp { background: var(--exp); }
+        .btn-calc { height: 30px; font-size: 0.75rem; background: #e2e8f0; color: #1e293b; margin-bottom: 5px; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .divider { border-top: 1px solid #eee; margin: 15px 0; padding-top: 10px; }
+        .calendar-scroll::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card" style="border-left: 5px solid var(--bank);">
+        <span class="stat-label">🏦 Conto Corrente (Fondo)</span>
+        <div style="display: flex; align-items: baseline; gap: 5px;">
+            <input type="number" id="edit-bank" step="0.01" style="border:none; padding:0; height:auto; width:150px; font-size:1.4rem; font-weight:800; color:var(--bank)" onchange="updateBalance('bank')">
+            <span style="font-size:1.4rem; font-weight:800; color:var(--bank)">€</span>
+        </div>
+    </div>
+    
+    <div class="card" style="border-left: 5px solid var(--acc);">
+        <div style="display: flex; justify-content: space-between;">
+            <div>
+                <span class="stat-label">💳 Prepagata (Spesa)</span>
+                <div style="display: flex; align-items: baseline; gap: 5px;">
+                    <input type="number" id="edit-prep" step="0.01" style="border:none; padding:0; height:auto; width:100px; font-size:1.4rem; font-weight:800; color:var(--acc)" onchange="updateBalance('prep')">
+                    <span style="font-size:1.4rem; font-weight:800; color:var(--acc)">€</span>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <span class="stat-label">Budget Oggi</span>
+                <span id="v-today" style="font-size: 1.4rem; font-weight: 800; color: #b45309; display: block;">0€</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <span class="stat-label">Piano fino al giorno 10</span>
+            <span id="v-days-count" style="font-weight:bold; color:var(--acc); font-size:0.8rem;"></span>
+        </div>
+        <div class="calendar-scroll" id="calendar"></div>
+    </div>
+
+    <div class="card">
+        <span class="stat-label">Impostazioni Stipendio</span>
+        <input type="number" id="in-salary" placeholder="Inserisci il tuo stipendio">
+        <button class="btn-salary" onclick="receiveSalary()">💰 Stipendio Ricevuto</button>
+        
+        <div class="divider">
+            <span class="stat-label">Ricarica Carta</span>
+            <button class="btn-calc" onclick="suggest35()">Calcola 35% del tuo stipendio</button>
+            <input type="number" id="in-transfer" placeholder="Importo da spostare €">
+            <button class="btn-transfer" onclick="transferToPrep()">⚡ Trasferisci Fondi</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <span class="stat-label">Registra Movimento</span>
+        <input type="text" id="sp-desc" placeholder="Descrizione">
+        <input type="number" id="sp-amt" placeholder="Importo €">
+        <div class="grid-2">
+            <button onclick="addSpesa('PREP')">Spesa Daily</button>
+            <button class="btn-bank-exp" onclick="addSpesa('BANK')">Spesa Extra</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Inizializzazione vuota per il pubblico
+    let s = JSON.parse(localStorage.getItem('public_finance_app')) || {
+        salary: 0, bank: 0, prep: 0
+    };
+
+    function updateBalance(type) {
+        if(type === 'bank') s.bank = parseFloat(document.getElementById('edit-bank').value) || 0;
+        if(type === 'prep') s.prep = parseFloat(document.getElementById('edit-prep').value) || 0;
+        render();
+    }
+
+    function suggest35() {
+        const salary = parseFloat(document.getElementById('in-salary').value) || 0;
+        document.getElementById('in-transfer').value = (salary * 0.35).toFixed(2);
+    }
+
+    function receiveSalary() {
+        const salary = parseFloat(document.getElementById('in-salary').value) || 0;
+        s.bank += salary;
+        s.salary = salary;
+        render();
+    }
+
+    function transferToPrep() {
+        const val = parseFloat(document.getElementById('in-transfer').value) || 0;
+        if(val > 0 && s.bank >= val) { s.bank -= val; s.prep += val; document.getElementById('in-transfer').value = ''; render(); }
+    }
+
+    function addSpesa(target) {
+        const amt = parseFloat(document.getElementById('sp-amt').value) || 0;
+        if(amt <= 0) return;
+        if(target === 'PREP') s.prep -= amt; else s.bank -= amt;
+        document.getElementById('sp-amt').value = ''; render();
+    }
+
+    function render() {
+        document.getElementById('edit-bank').value = s.bank.toFixed(2);
+        document.getElementById('edit-prep').value = s.prep.toFixed(2);
+        document.getElementById('in-salary').value = s.salary || '';
+        
+        const today = new Date();
+        const cal = document.getElementById('calendar');
+        cal.innerHTML = '';
+
+        let targetDate = new Date(today.getFullYear(), today.getMonth(), 10);
+        if (today.getDate() >= 10) targetDate.setMonth(targetDate.getMonth() + 1);
+        const diffDays = Math.ceil((targetDate - today) / 86400000) || 1;
+        document.getElementById('v-days-count').innerText = `${diffDays} giorni`;
+
+        let totalWeight = 0;
+        let future = [];
+        let temp = new Date(today);
+        for(let i=0; i<diffDays; i++) {
+            let d = new Date(temp);
+            let w = (d.getDay() === 5 || d.getDay() === 6) ? 1.8 : 1;
+            future.push({ date: d, weight: w });
+            totalWeight += w;
+            temp.setDate(temp.getDate() + 1);
+        }
+
+        const unit = s.prep / totalWeight;
+        future.forEach((day, index) => {
+            const isToday = index === 0;
+            const budget = unit * day.weight;
+            const div = document.createElement('div');
+            div.className = `day ${isToday ? 'today' : ''} ${day.date.getDay() === 0 || day.date.getDay() === 6 ? 'weekend' : ''}`;
+            div.innerHTML = `<div class="day-num">${day.date.getDate()}/${day.date.getMonth()+1}</div><span class="day-amt">${budget > 0 ? budget.toFixed(1) : '0'}€</span>`;
+            cal.appendChild(div);
+            if(isToday) document.getElementById('v-today').innerText = (budget > 0 ? budget.toFixed(2) : '0') + "€";
+        });
+
+        localStorage.setItem('public_finance_app', JSON.stringify(s));
+    }
+    render();
+</script>
+</body>
+</html>
