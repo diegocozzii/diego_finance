@@ -4,101 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Diego Finance</title>
-     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
+
     <style>
         :root { --bg: #f8fafc; --p: #1e293b; --acc: #f59e0b; --bank: #3b82f6; --save: #10b981; --exp: #ef4444; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--p); padding: 15px; margin: 0; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--p); padding: 12px; margin: 0; }
         .container { max-width: 600px; margin: auto; }
-        .card { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 15px; }
-        .stat-label { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
-        .stat-val { font-size: 1.4rem; font-weight: 800; display: block; margin-top: 4px; }
         
-        /* Calendario a scorrimento */
-        .calendar-scroll { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 5px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
-        .day { min-width: 90px; scroll-snap-align: start; background: white; border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; text-align: center; flex-shrink: 0; }
-        .day.today { border: 2px solid var(--acc); background: #fffbeb; }
-        .day.weekend { background: #fef3c7; }
-        .day-num { font-size: 0.8rem; font-weight: 700; color: #94a3b8; }
-        .day-amt { display: block; margin-top: 5px; font-size: 1.1rem; font-weight: 800; color: #b45309; }
+        /* Card base */
+        .card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 16px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            border: 1px solid #e2e8f0; 
+            margin-bottom: 10px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
 
-        /* Mobile Buttons */
-        input, button { width: 100%; height: 50px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 1rem; box-sizing: border-box; margin-top: 5px; }
-        button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .stat-label { font-size: 0.65rem; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 8px;}
+        
+        /* Griglie Pareggiate */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; align-items: stretch; }
+        .grid-2 .card { margin-bottom: 0; height: 100%; box-sizing: border-box; }
+
+        /* Calendario */
+        .calendar-scroll { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
+        .day { min-width: 80px; background: white; border-radius: 12px; padding: 10px; border: 1px solid #e2e8f0; text-align: center; flex-shrink: 0; }
+        .day.today { border: 2px solid var(--acc); background: #fffbeb; }
+        .day-amt { display: block; margin-top: 5px; font-size: 1rem; font-weight: 800; color: #b45309; }
+
+        /* Input e Bottoni */
+        input, button { width: 100%; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box; }
+        input { height: 45px; padding: 0 10px; }
+        button { height: 45px; background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; }
+        
+        .btn-small { height: 35px; font-size: 0.75rem; margin-top: 8px; }
         .btn-salary { background: var(--save); }
         .btn-transfer { background: var(--acc); color: #000; }
         .btn-bank-exp { background: var(--exp); }
-        .btn-calc { height: 30px; font-size: 0.75rem; background: #e2e8f0; color: #1e293b; margin-bottom: 5px; }
+        .btn-calc { height: 28px; font-size: 0.65rem; background: #f1f5f9; color: var(--p); margin-bottom: 6px; width: auto; padding: 0 8px; align-self: flex-start; }
+
+        /* Lista */
+        .history-list { margin-top: 10px; max-height: 150px; overflow-y: auto; }
+        .history-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem; }
         
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .divider { border-top: 1px solid #eee; margin: 15px 0; padding-top: 10px; }
         .calendar-scroll::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card" style="border-left: 5px solid var(--bank);">
-        <span class="stat-label">🏦 Conto Corrente (Fondo)</span>
-        <div style="display: flex; align-items: baseline; gap: 5px;">
-            <input type="number" id="edit-bank" step="0.01" style="border:none; padding:0; height:auto; width:150px; font-size:1.4rem; font-weight:800; color:var(--bank)" onchange="updateBalance('bank')">
-            <span style="font-size:1.4rem; font-weight:800; color:var(--bank)">€</span>
+    <div class="grid-2">
+        <div class="card" style="border-bottom: 4px solid var(--bank);">
+            <span class="stat-label">🏦 Conto (Fondo)</span>
+            <input type="number" id="edit-bank" step="0.01" style="height:35px; border:none; font-size:1.2rem; color:var(--bank); font-weight:800;" onchange="updateBalance('bank')">
         </div>
-    </div>
-    
-    <div class="card" style="border-left: 5px solid var(--acc);">
-        <div style="display: flex; justify-content: space-between;">
-            <div>
-                <span class="stat-label">💳 Prepagata (Spesa)</span>
-                <div style="display: flex; align-items: baseline; gap: 5px;">
-                    <input type="number" id="edit-prep" step="0.01" style="border:none; padding:0; height:auto; width:100px; font-size:1.4rem; font-weight:800; color:var(--acc)" onchange="updateBalance('prep')">
-                    <span style="font-size:1.4rem; font-weight:800; color:var(--acc)">€</span>
-                </div>
-            </div>
-            <div style="text-align: right;">
-                <span class="stat-label">Budget Oggi</span>
-                <span id="v-today" style="font-size: 1.4rem; font-weight: 800; color: #b45309; display: block;">0€</span>
-            </div>
+        <div class="card" style="border-bottom: 4px solid var(--acc);">
+            <span class="stat-label">💳 Prepagata (Spesa)</span>
+            <input type="number" id="edit-prep" step="0.01" style="height:35px; border:none; font-size:1.2rem; color:var(--acc); font-weight:800;" onchange="updateBalance('prep')">
         </div>
     </div>
 
+    <div class="card" style="text-align: center; background: #fffbeb; border: 2px solid var(--acc);">
+        <span class="stat-label">💰 Disponibile Oggi</span>
+        <span id="v-today" style="font-size: 2.2rem; font-weight: 900; color: #b45309;">0.00€</span>
+    </div>
+
     <div class="card">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span class="stat-label">Piano fino al giorno 10</span>
-            <span id="v-days-count" style="font-weight:bold; color:var(--acc); font-size:0.8rem;"></span>
-        </div>
+        <span class="stat-label">Pianificazione</span>
         <div class="calendar-scroll" id="calendar"></div>
     </div>
 
-    <div class="card">
-        <span class="stat-label">Impostazioni Stipendio</span>
-        <input type="number" id="in-salary" placeholder="Inserisci il tuo stipendio">
-        <button class="btn-salary" onclick="receiveSalary()">💰 Stipendio Ricevuto</button>
-        
-        <div class="divider">
-            <span class="stat-label">Ricarica Carta</span>
-            <button class="btn-calc" onclick="suggest35()">Calcola 35% del tuo stipendio</button>
-            <input type="number" id="in-transfer" placeholder="Importo da spostare €">
-            <button class="btn-transfer" onclick="transferToPrep()">⚡ Trasferisci Fondi</button>
+    <div class="grid-2">
+        <div class="card">
+            <span class="stat-label">Stipendio</span>
+            <input type="number" id="in-salary" placeholder="€">
+            <button class="btn-salary btn-small" onclick="receiveSalary()">ACCREDITA</button>
+        </div>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+                <span class="stat-label">Ricarica</span>
+                <button class="btn-calc" onclick="suggest35()">Usa 35%</button>
+            </div>
+            <input type="number" id="in-transfer" placeholder="€">
+            <button class="btn-transfer btn-small" onclick="transferToPrep()">RICARICA</button>
         </div>
     </div>
 
     <div class="card">
-        <span class="stat-label">Registra Movimento</span>
+        <span class="stat-label">Nuova Operazione</span>
         <input type="text" id="sp-desc" placeholder="Descrizione">
-        <input type="number" id="sp-amt" placeholder="Importo €">
-        <div class="grid-2">
-            <button onclick="addSpesa('PREP')">Spesa Daily</button>
-            <button class="btn-bank-exp" onclick="addSpesa('BANK')">Spesa Extra</button>
+        <input type="number" id="sp-amt" placeholder="Importo €" style="margin-top:8px;">
+        <div class="grid-2" style="margin-top:10px;">
+            <button onclick="addSpesa('PREP')">Daily (Carta)</button>
+            <button class="btn-bank-exp" onclick="addSpesa('BANK')">Extra (Conto)</button>
         </div>
+    </div>
+
+    <div class="card">
+        <span class="stat-label">Storico</span>
+        <div id="history" class="history-list"></div>
+        <button onclick="confirmReset()" style="background:none; color:#94a3b8; font-size:0.7rem; margin-top:10px; border:none; height:auto;">Resetta tutto</button>
     </div>
 </div>
 
 <script>
-    // Inizializzazione vuota per il pubblico
-    let s = JSON.parse(localStorage.getItem('public_finance_app')) || {
-        salary: 0, bank: 0, prep: 0
+    let s = JSON.parse(localStorage.getItem('diego_finance_v3')) || {
+        salary: 0, bank: 0, prep: 0, history: [], dailySpent: 0, lastUpdate: new Date().toDateString()
     };
+
+    if (s.lastUpdate !== new Date().toDateString()) {
+        s.dailySpent = 0;
+        s.lastUpdate = new Date().toDateString();
+    }
 
     function updateBalance(type) {
         if(type === 'bank') s.bank = parseFloat(document.getElementById('edit-bank').value) || 0;
@@ -107,27 +129,38 @@
     }
 
     function suggest35() {
-        const salary = parseFloat(document.getElementById('in-salary').value) || 0;
+        const salary = parseFloat(document.getElementById('in-salary').value) || s.salary || 0;
         document.getElementById('in-transfer').value = (salary * 0.35).toFixed(2);
     }
 
     function receiveSalary() {
         const salary = parseFloat(document.getElementById('in-salary').value) || 0;
-        s.bank += salary;
-        s.salary = salary;
-        render();
+        if(salary > 0) { s.bank += salary; s.salary = salary; render(); }
     }
 
     function transferToPrep() {
         const val = parseFloat(document.getElementById('in-transfer').value) || 0;
-        if(val > 0 && s.bank >= val) { s.bank -= val; s.prep += val; document.getElementById('in-transfer').value = ''; render(); }
+        if(val > 0 && s.bank >= val) { s.bank -= val; s.prep += val; render(); }
     }
 
     function addSpesa(target) {
         const amt = parseFloat(document.getElementById('sp-amt').value) || 0;
+        const desc = document.getElementById('sp-desc').value || "Spesa";
         if(amt <= 0) return;
-        if(target === 'PREP') s.prep -= amt; else s.bank -= amt;
-        document.getElementById('sp-amt').value = ''; render();
+
+        if(target === 'PREP') { s.prep -= amt; s.dailySpent += amt; } 
+        else { s.bank -= amt; }
+
+        s.history.push({
+            date: new Date().toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'}),
+            desc: desc,
+            amt: amt,
+            type: target
+        });
+
+        document.getElementById('sp-amt').value = '';
+        document.getElementById('sp-desc').value = '';
+        render();
     }
 
     function render() {
@@ -142,7 +175,6 @@
         let targetDate = new Date(today.getFullYear(), today.getMonth(), 10);
         if (today.getDate() >= 10) targetDate.setMonth(targetDate.getMonth() + 1);
         const diffDays = Math.ceil((targetDate - today) / 86400000) || 1;
-        document.getElementById('v-days-count').innerText = `${diffDays} giorni`;
 
         let totalWeight = 0;
         let future = [];
@@ -155,19 +187,39 @@
             temp.setDate(temp.getDate() + 1);
         }
 
-        const unit = s.prep / totalWeight;
+        const unit = (s.prep + s.dailySpent) / totalWeight;
+        const budgetOggiTeorico = unit * future[0].weight;
+        const budgetOggiResiduo = budgetOggiTeorico - s.dailySpent;
+
+        document.getElementById('v-today').innerText = (budgetOggiResiduo > 0 ? budgetOggiResiduo.toFixed(2) : '0.00') + "€";
+
         future.forEach((day, index) => {
             const isToday = index === 0;
-            const budget = unit * day.weight;
+            const b = unit * day.weight;
             const div = document.createElement('div');
             div.className = `day ${isToday ? 'today' : ''} ${day.date.getDay() === 0 || day.date.getDay() === 6 ? 'weekend' : ''}`;
-            div.innerHTML = `<div class="day-num">${day.date.getDate()}/${day.date.getMonth()+1}</div><span class="day-amt">${budget > 0 ? budget.toFixed(1) : '0'}€</span>`;
+            div.innerHTML = `
+                <div class="day-num">${day.date.getDate()}/${day.date.getMonth()+1}</div>
+                <span class="day-amt">${isToday ? budgetOggiResiduo.toFixed(1) : b.toFixed(1)}€</span>
+            `;
             cal.appendChild(div);
-            if(isToday) document.getElementById('v-today').innerText = (budget > 0 ? budget.toFixed(2) : '0') + "€";
         });
 
-        localStorage.setItem('public_finance_app', JSON.stringify(s));
+        const histDiv = document.getElementById('history');
+        histDiv.innerHTML = '';
+        s.history.slice().reverse().forEach(item => {
+            histDiv.innerHTML += `
+                <div class="history-item">
+                    <span>${item.date} <b>${item.desc}</b></span>
+                    <span style="color:${item.type === 'PREP' ? '#000' : 'var(--exp)'}">-${item.amt.toFixed(2)}€</span>
+                </div>
+            `;
+        });
+
+        localStorage.setItem('diego_finance_v3', JSON.stringify(s));
     }
+
+    function confirmReset() { if(confirm("Cancellare tutto?")) { localStorage.clear(); location.reload(); } }
     render();
 </script>
 </body>
